@@ -1,0 +1,280 @@
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from pandas import read_csv
+from numpy import array
+import tensorflow as tf
+from os import makedirs
+from os.path import join
+import pickle as pkl
+import time
+
+
+seed = 42
+dataPath = r"D:\Project\Sem7\DataPrepared\data0Prepared.csv"
+saveModelsPath = r"D:\Project\Sem7\Python\SavedModels"
+
+
+# Best Parameters for each model
+annParams = {'activationInner': 'relu', 'batchSize': 9, 'dropoutRate': 0.13542256022753876, 'epochs': 13, 'hidden': 1, 
+             'learningRate': 0.9870180672345121, 'neurons': 130, 'optimizer': tf.keras.optimizers.legacy.Adagrad()}
+dropANN = ['PlanCurvature', 'Longitude']
+# roc auc: 0.8929
+
+dtcParams = {'criterion': 'gini', 'splitter': 'best', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 1, 
+             'min_weight_fraction_leaf': 0.0, 'max_features': None, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 
+             'class_weight': 'balanced', 'ccp_alpha': 0.0, 'random_state': 0}
+keepDTC = ['Aspect', 'DrainageDensity', 'Hillshade', 'Slope', 'Latitude', 'Soil3639', 'Soil3662', 'Soil3691', 'Soil3717',
+           'Soil3761', 'Soil3849', 'Soil3850', 'Soil6998', 'LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11']
+# roc auc = 0.8392
+
+kncParams = {'n_neighbors': 150, 'weights': 'distance', 'algorithm': 'ball_tree', 'leaf_size': 1000, 'p': 10000, 'metric': 'minkowski'}    
+dropKNC = ['Curvature', 'ProfileCurvature', 'PlanCurvature']
+# roc auc = 0.7834
+
+lrgParams = {'penalty': 'l2', 'dual': False, 'tol': 0, 'C': 1.283519523865181, 'fit_intercept': True, 
+             'intercept_scaling': 1.3033129112148014, 'random_state': None, 'solver': 'lbfgs', 'max_iter': 105, 
+             'multi_class': 'auto', 'n_jobs': 11, 'l1_ratio': None}
+dropLRG = ['Latitude']
+# roc auc = 0.7932
+
+rfcParams = {'n_estimators': 47, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.5105968088516342, 
+             'min_samples_leaf': 3, 'min_weight_fraction_leaf': 0.0, 'max_features': 'sqrt', 'max_leaf_nodes': None, 
+             'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 
+             'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+dropRFC = ['PlanCurvature']
+# roc auc = 0.829
+
+svcParams = {'C': 8.41754182819405, 'kernel': 'rbf', 'degree': 6, 'gamma': 0.42552367810334757, 'coef0': 0.05072832039309083, 
+             'shrinking': True, 'tol': 0.2880661647583267, 'cache_size': 226, 'max_iter': 488, 
+             'decision_function_shape': 'ovr', 'random_state': 42}
+keepSVC = ['Aspect', 'DrainageDensity', 'Hillshade', 'Slope', 'Longitude', 'Latitude']
+# roc auc = 0.7792
+
+
+
+
+def splitData(features, label):
+    global xTrain, xTest, yTrain, yTest, xVal, yVal
+    xTrain, xTest, yTrain, yTest = train_test_split(features, label, test_size=0.2, random_state=seed, stratify=label)
+    xTrain, xVal, yTrain, yVal = train_test_split(xTrain, yTrain, test_size=0.25, random_state=seed, stratify=yTrain)
+    # print(xTrain.shape, yTrain.shape, xVal.shape, yVal.shape, xTest.shape, yTest.shape)
+
+
+
+def showMetrics(yPred, modelName, show=True):
+    yPred = [1 if ele > 0.50 else 0 for ele in yPred]
+    acc = round(accuracy_score(yTest, yPred), 4)
+    prsc = round(precision_score(yTest, yPred), 4)
+    rcll = round(recall_score(yTest, yPred), 4)
+    f1 = round(f1_score(yTest, yPred), 4)
+    roc = round(roc_auc_score(yTest, yPred), 4)
+    if show:
+        print('\n', modelName)
+        print('Confusion Matrix:\n', confusion_matrix(yTest, yPred))
+        print('Accuracy Score:', acc)
+        print('Precision Score:', prsc)
+        print('Recall Score:', rcll)
+        print('F1 Score:', f1)
+        print('ROC AUC score:', roc)
+    return (acc, prsc, rcll, f1, roc)
+
+
+def makeANNModel(params, train, test, dropClm=None, keepClm=None):   
+    '''Make arbitrary ANN Model and test it'''
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    batchSize = params['batchSize']
+    epochs = params['epochs']
+    neurons = params['neurons']
+    hidden = params['hidden']
+    learningRate = params['learningRate']
+    dropoutRate = params['dropoutRate']
+    optm = params['optimizer']
+    tf.keras.backend.set_value(optm.learning_rate, learningRate)
+    activationInner = params['activationInner']
+
+    tf.random.set_seed(seed)
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Input(shape=xTrain.iloc[1, :].shape))
+    for i in range(hidden):
+        model.add(tf.keras.layers.BatchNormalization())
+        model.add(tf.keras.layers.Dropout(rate=dropoutRate))
+        model.add(tf.keras.layers.Dense(units=neurons, activation=activationInner, kernel_initializer='normal'))
+    model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.Dropout(rate=dropoutRate))
+    model.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
+    model.compile(loss='binary_crossentropy', optimizer=optm, metrics=['accuracy'])
+
+    model.fit(xTrain, yTrain, epochs=epochs, batch_size=batchSize, verbose=0)
+    yProba = model.predict(xTest, verbose=0)
+    yPred = array([1 if ele > 0.50 else 0 for ele in yProba])
+
+    return yPred, yProba.transpose()[0], model
+
+
+def makeDTCModel(params, train, test, dropClm=None, keepClm=None):
+    clf = DecisionTreeClassifier(**params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def makeRFCModel(params, train, test, dropClm=None, keepClm=None):
+    clf = RandomForestClassifier(**params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def makeLRGModel(params, train, test, dropClm=None, keepClm=None):
+    clf = LogisticRegression(**params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def makeKNCModel(params, train, test, dropClm=None, keepClm=None):
+    clf = KNeighborsClassifier(**params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def makeSVCModel(params, train, test, dropClm=None, keepClm=None):
+    clf = SVC(probability=True, **params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def PowerSet(s, n): 
+    '''Function to print the power set'''
+    def findPowerSet(s, res, n): 
+        if (n == 0): 
+            temp = []
+            for i in res: 
+                temp.append(i) 
+            columnsPowerSet.append(temp)
+            return
+    
+        # append the subset to result 
+        res.append(s[n - 1]) 
+        findPowerSet(s, res, n - 1) 
+        res.pop() 
+        findPowerSet(s, res, n - 1) 
+
+    ans = [] 
+    findPowerSet(s, ans, n)
+
+
+def dumpModel(model, modelName, roc):
+    timestamp = time.strftime('%Y-%m-%d %H-%M-%S', time.gmtime(time.time()))
+    fileName = f'{modelName}_roc-{roc}_{timestamp}.h5'
+    savePath = join(join(saveModelsPath, modelName), fileName)
+    makedirs(join(saveModelsPath, modelName), exist_ok=True)
+    if modelName == 'ANN':
+        model.save(savePath)
+    else:
+        pkl.dump(model, open(savePath, 'wb'))
+    print('Model saved successfully at ', savePath)
+    
+
+
+if __name__ == '__main__':
+    t0 = time.time()
+    global columnsPowerSet 
+
+    data = read_csv(dataPath)
+    features = data.iloc[:, :-1]
+    label = data.iloc[:, -1]
+    splitData(features, label)
+
+    modelName = 'DTC'
+    for thres in range(75, 96):
+        i = 0
+        while True:
+            print('Iteration Threshold: ', i, thres/100)
+            i += 1
+            dtcPred, dtcProba, model = makeDTCModel(dtcParams, (xTrain, yTrain), (xTest, yTest), keepClm=keepDTC)
+            metrics = showMetrics(dtcPred, modelName, False)
+            roc = metrics[4]
+            if roc >= thres/100:
+                timestamp = time.strftime('%Y-%m-%d %H-%M-%S', time.gmtime(time.time()))
+                fileName = f'{modelName}_roc-{roc}_{timestamp}.h5'
+                savePath = join(join(saveModelsPath, modelName), fileName)
+                if modelName == 'ANN':
+                    model.save(savePath)
+                else:
+                    pkl.dump(model, open(savePath, 'w'))
+                break
+    t1 = time.time()
+    t = time.strftime('%H:%M:%S', time.gmtime(t1-t0))
+    print('Total time taken: ', t)
+

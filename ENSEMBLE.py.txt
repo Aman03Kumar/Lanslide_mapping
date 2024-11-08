@@ -1,0 +1,769 @@
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve
+from pandas import read_csv
+from numpy import zeros, array
+import tensorflow as tf
+from os.path import join
+from pandas import DataFrame
+import matplotlib.pyplot as plt
+
+
+seed = 42
+thres = 10000
+noSSDataPath = r"D:\Project\Sem7\DataPrepared\data0Prepared_noSS.csv"
+dataPath = r"D:\Project\Sem7\DataPrepared\data0Prepared.csv"
+spatialDatasetPath = r"D:\Project\Sem7\DataSpatial"
+dfFolderPath = r"D:\Project\Sem7\Python\reportFiles\ENSEMBLE"
+metricsTrainTestPath = r"D:\Project\Sem7\Python\reportFiles\bestMetricsIndividual.csv"
+featureImportancePath = r"D:\Project\Sem7\Python\reportFiles\FeatureImportances.csv"
+noSSData = read_csv(noSSDataPath)
+
+
+data = read_csv(dataPath)
+features = data.iloc[:, :-1]
+label = data.iloc[:, -1]
+
+
+
+# Best Parameters for each model
+annParams = {'activationInner': 'relu', 'batchSize': 9, 'dropoutRate': 0.13542256022753876, 'epochs': 13, 'hidden': 1, 
+             'learningRate': 0.9870180672345121, 'neurons': 130, 'optimizer': tf.keras.optimizers.legacy.Adagrad()}
+dropANN = ['PlanCurvature', 'Longitude']
+aucANN = 0.8929
+
+dtcParams = {'criterion': 'gini', 'splitter': 'best', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 1, 
+             'min_weight_fraction_leaf': 0.0, 'max_features': None, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 
+             'class_weight': 'balanced', 'ccp_alpha': 0.0, 'random_state': 0}
+keepDTC = ['Aspect', 'DrainageDensity', 'Hillshade', 'Slope', 'Latitude', 'Soil3639', 'Soil3662', 'Soil3691', 'Soil3717', 
+           'Soil3761', 'Soil3849', 'Soil3850', 'Soil6998', 'LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11']
+aucDTC = 0.8392
+
+kncParams = {'n_neighbors': 216, 'weights': 'distance', 'algorithm': 'auto', 'leaf_size': 91022, 'p': 38053, 'metric': 'cosine'}   
+keepKNC = ['DrainageDensity', 'Rainfall', 'TWI', 'Longitude']
+aucKNC = 0.8111
+
+lrgParams = {'penalty': 'l2', 'dual': False, 'tol': 0, 'C': 1.283519523865181, 'fit_intercept': True, 
+             'intercept_scaling': 1.3033129112148014, 'random_state': None, 'solver': 'lbfgs', 'max_iter': 105, 
+             'multi_class': 'auto', 'n_jobs': 11, 'l1_ratio': None}
+dropLRG = ['Latitude']
+aucLRG = 0.7932
+
+nbcParams = {'priors': (0.9956511165001147, 0.00434888349988527), 'var_smoothing': 0.1991085689509837}
+dropNBC = ['TWI', 'Curvature', 'Latitude', 'DrainageDensity']
+aucNBC = 0.8307
+
+rfcParams = {'n_estimators': 47, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.5105968088516342, 
+             'min_samples_leaf': 3, 'min_weight_fraction_leaf': 0.0, 'max_features': 'sqrt', 'max_leaf_nodes': None, 
+             'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 
+             'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+dropRFC = ['PlanCurvature']
+aucRFC = 0.829
+
+svcParams = {'C': 8.41754182819405, 'kernel': 'rbf', 'degree': 6, 'gamma': 0.42552367810334757, 'coef0': 0.05072832039309083, 
+             'shrinking': True, 'tol': 0.2880661647583267, 'cache_size': 226, 'max_iter': 488, 
+             'decision_function_shape': 'ovr', 'random_state': 42}
+keepSVC = ['Aspect', 'DrainageDensity', 'Hillshade', 'Slope', 'Longitude', 'Latitude']
+aucSVC = 0.7792
+
+
+def splitData(features, label):
+    global xTrain, xTest, yTrain, yTest, xVal, yVal
+    xTrain, xTest, yTrain, yTest = train_test_split(features, label, test_size=0.2, random_state=seed, stratify=label)
+    xTrain, xVal, yTrain, yVal = train_test_split(xTrain, yTrain, test_size=0.25, random_state=seed, stratify=yTrain)
+    # print(xTrain.shape, yTrain.shape, xVal.shape, yVal.shape, xTest.shape, yTest.shape)
+
+
+
+def showMetrics(yTrue, yPred, modelName, show=True):
+    yPred = [1 if ele >= 0.50 else 0 for ele in yPred]
+    acc = round(accuracy_score(yTrue, yPred), 4)
+    prsc = round(precision_score(yTrue, yPred), 4)
+    rcll = round(recall_score(yTrue, yPred), 4)
+    f1 = round(f1_score(yTrue, yPred), 4)
+    roc = round(roc_auc_score(yTrue, yPred), 4)
+    if show:
+        print('\n', modelName)
+        print('Confusion Matrix:\n', confusion_matrix(yTrue, yPred))
+        print('Accuracy Score:', acc)
+        print('Precision Score:', prsc)
+        print('Recall Score:', rcll)
+        print('F1 Score:', f1)
+        print('ROC AUC score:', roc)
+    return (acc, prsc, rcll, f1, roc)
+
+
+def makeANNModel(params, train, test, dropClm=None, keepClm=None):   
+    '''Make arbitrary ANN Model and test it'''
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    batchSize = params['batchSize']
+    epochs = params['epochs']
+
+    neurons = params['neurons']
+    hidden = params['hidden']
+    learningRate = params['learningRate']
+    dropoutRate = params['dropoutRate']
+    optm = params['optimizer']
+    tf.keras.backend.set_value(optm.learning_rate, learningRate)
+    activationInner = params['activationInner']
+
+    tf.random.set_seed(seed)
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Input(shape=xTrain.iloc[1, :].shape))
+    for i in range(hidden):
+        model.add(tf.keras.layers.BatchNormalization())
+        model.add(tf.keras.layers.Dropout(rate=dropoutRate))
+        model.add(tf.keras.layers.Dense(units=neurons, activation=activationInner, kernel_initializer='normal'))
+    model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.Dropout(rate=dropoutRate))
+    model.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
+    model.compile(loss='binary_crossentropy', optimizer=optm, metrics=['accuracy'])
+
+    model.fit(xTrain, yTrain, epochs=epochs, batch_size=batchSize, verbose=0)
+    yProba = model.predict(xTest, verbose=0)
+    yPred = array([1 if ele >= 0.50 else 0 for ele in yProba])
+
+    return yPred, yProba.transpose()[0], model
+
+
+def makeDTCModel(params, train, test, dropClm=None, keepClm=None):
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+    
+    clf = DecisionTreeClassifier(**params)
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def makeRFCModel(params, train, test, dropClm=None, keepClm=None):
+    clf = RandomForestClassifier(**params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def makeLRGModel(params, train, test, dropClm=None, keepClm=None):
+    clf = LogisticRegression(**params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def makeNBCModel(params, train, test, dropClm=None, keepClm=None):
+    clf = GaussianNB(**params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def makeKNCModel(params, train, test, dropClm=None, keepClm=None):
+    clf = KNeighborsClassifier(**params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def makeSVCModel(params, train, test, dropClm=None, keepClm=None):
+    clf = SVC(probability=True, **params)
+    xTrain, yTrain = train[0], train[1]
+    xTest, yTest = test[0], test[1]
+    if dropClm != None:
+        xTrain = xTrain.drop(dropClm, axis=1)
+        xTest = xTest.drop(dropClm, axis=1)
+    if keepClm != None:
+        xTrain = xTrain.loc[:, keepClm]
+        xTest = xTest.loc[:, keepClm]
+
+    clf.fit(xTrain, yTrain)
+    yPred = clf.predict(xTest)
+    yProba = clf.predict_proba(xTest)[:, 1]
+
+    return yPred, yProba, clf
+
+
+def PowerSet(s, n): 
+    '''Function to print the power set'''
+    def findPowerSet(s, res, n): 
+        if (n == 0): 
+            temp = []
+            for i in res: 
+                temp.append(i) 
+            columnsPowerSet.append(temp)
+            return
+    
+        # append the subset to result 
+        res.append(s[n - 1]) 
+        findPowerSet(s, res, n - 1) 
+        res.pop() 
+        findPowerSet(s, res, n - 1) 
+
+    ans = [] 
+    findPowerSet(s, ans, n)
+
+
+def retBest(tPred, tProba, tClf, bPred, bProba, bClf):
+    metTPred = showMetrics(yTest, tPred, 'test', False)
+    metBPred = showMetrics(yTest, bPred, 'test', False)
+    if metTPred[4] > metBPred[4]:
+        return tPred, tProba, tClf
+    else:
+        return bPred, bProba, bClf
+    
+
+def saveIndividualMetrics(dt):
+    try:
+        df = read_csv(metricsTrainTestPath)
+        i = len(df)
+    except:
+        df = DataFrame()
+        i = 0
+    for item in dt:
+        metTest = showMetrics(yTest, dt[item][0], modelName=f'{item} Testing', show=False)
+        metTrain = showMetrics(label, dt[item][3], modelName=f'{item} Training', show=False)
+        df.loc[i, 'model_name'] = f'{item} Testing'
+        df.loc[i, 'accuracy'] = metTest[0]
+        df.loc[i, 'precision'] = metTest[1]
+        df.loc[i, 'recall'] = metTest[2]
+        df.loc[i, 'f1_score'] = metTest[3]
+        df.loc[i, 'roc_auc'] = metTest[4]
+        i += 1
+        df.loc[i, 'model_name'] = f'{item} Training'
+        df.loc[i, 'accuracy'] = metTrain[0]
+        df.loc[i, 'precision'] = metTrain[1]
+        df.loc[i, 'recall'] = metTrain[2]
+        df.loc[i, 'f1_score'] = metTrain[3]
+        df.loc[i, 'roc_auc'] = metTrain[4]
+        i += 1
+    df.to_csv(metricsTrainTestPath, index=False)
+    
+
+def makeSpatialDataset(modelName, model, dropClm=None, keepClm=None):
+    '''Make Spatial Dataset'''
+    global features, label
+    if dropClm != None:
+        feats = features.drop(dropClm, axis=1)
+    if keepClm != None:
+        feats = features.loc[:, keepClm]
+    if modelName == 'ANN':
+        proba = model.predict(feats, verbose=0)
+    else:
+        proba = model.predict_proba(feats)[:, 1]
+    dtPrep = noSSData.loc[:, ['Latitude', 'Longitude', 'Target']]
+    # print('Probabilities of ', modelName)
+    # print(proba)
+    yPred = array([1 if ele >= 0.50 else 0 for ele in proba])
+    dtPrep['Prediction'] = yPred
+    dtPrep['PredictionProbability'] = proba
+    fileName = f'SpatialPrediction_{modelName}.csv'
+    dtPrep.to_csv(join(spatialDatasetPath, fileName), index=False)
+    if modelName == 'ANN':
+        return yPred, proba.transpose()[0]
+    else:
+        return yPred, proba
+    
+
+def retSubsetFeatures(modelName):
+    if modelName == 'ANN':
+        fts = features.drop(dropANN, axis=1)
+        negFts = features.loc[:, dropANN]
+    elif modelName == 'DTC':
+        fts = features.loc[:, keepDTC]
+        negFts = features.drop(keepDTC, axis=1)
+    elif modelName == 'KNC':
+        fts = features.loc[:, keepKNC]
+        negFts = features.drop(keepKNC, axis=1)
+    elif modelName == 'LRG':
+        fts = features.drop(dropLRG, axis=1)
+        negFts = features.loc[:, dropLRG]
+    elif modelName == 'NBC':
+        fts = features.drop(dropNBC, axis=1)
+        negFts = features.loc[:, dropNBC]
+    elif modelName == 'RFC':
+        fts = features.drop(dropRFC, axis=1)
+        negFts = features.loc[:, dropRFC]
+    elif modelName == 'SVC':
+        fts = features.loc[:, keepSVC]
+        negFts = features.drop(keepSVC, axis=1)
+    else:
+        fts = features.copy()
+        lulc = fts.loc[:, ['LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11']]
+        soil = fts.loc[:, ['Soil3639', 'Soil3662', 'Soil3691', 'Soil3717', 'Soil3761', 'Soil3849', 'Soil3850', 'Soil6998']]
+        fts = fts.drop(['LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11'], axis=1)
+        fts = fts.drop(['Soil3639', 'Soil3662', 'Soil3691', 'Soil3717', 'Soil3761', 'Soil3849', 'Soil3850', 'Soil6998'], axis=1)
+        fts['LULC'] = lulc.sum(axis=1)
+        fts['SoilType'] = soil.sum(axis=1)
+        # print(fts.head(3))
+        negFts = DataFrame()
+    return fts, negFts
+
+
+def plotFeatureImportances(temp, modelName):
+    '''Feature Importances'''
+    feats, negFeats = retSubsetFeatures(modelName)
+    dt = DataFrame(temp.reshape((1, temp.shape[0])), columns=feats.columns)    
+    for it in negFeats:
+        dt[it] = 0
+    try:
+        lulc = dt.loc[:, ['LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11']]
+        sum0 = lulc.sum(axis=1)
+        dt = dt.drop(['LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11'], axis=1)
+    except:
+        sum0 = 0
+    try: 
+        soil = dt.loc[:, ['Soil3639', 'Soil3662', 'Soil3691', 'Soil3717', 'Soil3761', 'Soil3849', 'Soil3850', 'Soil6998']]
+        sum1 = soil.sum(axis=1)
+        dt = dt.drop(['Soil3639', 'Soil3662', 'Soil3691', 'Soil3717', 'Soil3761', 'Soil3849', 'Soil3850', 'Soil6998'], axis=1)
+    except:
+        sum1 = 0
+    dt['LULC'], dt['SoilType'] = sum0, sum1
+    dt['ModelName'] = modelName
+    # print('Feature Importance values:\n', dt)
+    plot = dt.plot.bar(rot=0, title=modelName)
+    plot.legend(loc='upper left')
+    plot.set_xlabel('Significant Features')
+    plot.set_ylabel('Normalised Ratio')
+    plt.show()
+    dt = dt[['Latitude', 'Longitude', 'TWI', 'TPI', 'Slope', 'Rainfall', 'Hillshade', 
+             'Elevation', 'DrainageDensity', 'ProfileCurvature', 'PlanCurvature', 
+             'Curvature', 'Aspect', 'LULC', 'SoilType', 'ModelName']]
+    try:
+        dt.to_csv(featureImportancePath, mode='a', index=False)
+    except:
+        dt.to_csv(featureImportancePath, index=False)
+    return dt
+
+
+if __name__ == '__main__':
+    import time
+    t0 = time.time()
+    global columnsPowerSet 
+
+
+    splitData(features, label)
+
+
+    print('\nMaking ANN Model')
+    annPred = zeros(yTest.shape)
+    annProba = zeros(yTest.shape)
+    clfANN = None
+    for i in range(thres):
+        tempPred, tempProba, tempANN = makeANNModel(annParams, (xTrain, yTrain), (xTest, yTest), dropClm=dropANN)
+        annPred, annProba, clfANN = retBest(tempPred, tempProba, tempANN, annPred, annProba, clfANN)
+        metrics = showMetrics(yTest, annPred, 'ANN', False)
+        if metrics[4] >= aucANN:
+            break
+        
+    print('\nMaking DTC Model')
+    dtcPred = zeros(yTest.shape)
+    dtcProba = zeros(yTest.shape)
+    clfDTC = None
+    for i in range(thres):
+        tempPred, tempProba, tempDTC = makeDTCModel(dtcParams, (xTrain, yTrain), (xTest, yTest), keepClm=keepDTC)
+        dtcPred, dtcProba, clfDTC = retBest(tempPred, tempProba, tempDTC, dtcPred, dtcProba, clfDTC)
+        metrics = showMetrics(yTest, dtcPred, 'DTC', False)
+        # if metrics[4] >= aucDTC:
+        #     break
+
+    print('\nMaking KNC Model')
+    kncPred = zeros(yTest.shape)
+    kncProba = zeros(yTest.shape)
+    clfKNC = None
+    for i in range(thres):
+        tempPred, tempProba, tempKNC = makeKNCModel(kncParams, (xTrain, yTrain), (xTest, yTest), keepClm=keepKNC)
+        kncPred, kncProba, clfKNC= retBest(tempPred, tempProba, tempKNC, kncPred, kncProba, clfKNC)
+        metrics = showMetrics(yTest, kncPred, 'KNC', False)
+        # if metrics[4] >= aucKNC:
+        #     break
+
+    print('\nMaking RFC Model')
+    rfcPred = zeros(yTest.shape)
+    rfcProba = zeros(yTest.shape)
+    clfRFC = None
+    for i in range(thres):
+        tempPred, tempProba, tempRFC = makeRFCModel(rfcParams, (xTrain, yTrain), (xTest, yTest), dropClm=dropRFC)
+        rfcPred, rfcProba, clfRFC = retBest(tempPred, tempProba, tempRFC, rfcPred, rfcProba, clfRFC)
+        metrics = showMetrics(yTest, rfcPred, 'RFC', False)
+        # if metrics[4] >= aucRFC:
+        #     break
+
+    print('\nMaking LRG Model')
+    lrgPred = zeros(yTest.shape)
+    lrgProba = zeros(yTest.shape)
+    clfLRG = None
+    for i in range(thres):
+        tempPred, tempProba, tempLRG = makeLRGModel(lrgParams, (xTrain, yTrain), (xTest, yTest), dropClm=dropLRG)
+        lrgPred, lrgProba, clfLRG = retBest(tempPred, tempProba, tempLRG, lrgPred, lrgProba, clfLRG)
+        metrics = showMetrics(yTest, lrgPred, 'LRG', False)
+        # if metrics[4] >= aucLRG:
+        #     break    
+
+    print('\nMaking NBC Model')
+    nbcPred = zeros(yTest.shape)
+    nbcProba = zeros(yTest.shape)
+    clfNBC = None
+    for i in range(thres):
+        tempPred, tempProba, tempNBC = makeNBCModel(nbcParams, (xTrain, yTrain), (xTest, yTest), dropClm=dropNBC)
+        nbcPred, nbcProba, clfNBC = retBest(tempPred, tempProba, tempNBC, nbcPred, nbcProba, clfNBC)
+        metrics = showMetrics(yTest, nbcPred, 'NBC', False)
+        # if metrics[4] >= aucNBC:
+        #     break
+
+    print('\nMaking SVC Model')
+    svcPred = zeros(yTest.shape)
+    svcProba = zeros(yTest.shape)
+    clfSVC = None
+    for i in range(thres):
+        tempPred, tempProba, tempSVC = makeSVCModel(svcParams, (xTrain, yTrain), (xTest, yTest), keepClm=keepSVC)
+        svcPred, svcProba, clfSVC = retBest(tempPred, tempProba, tempSVC, svcPred, svcProba, clfSVC)
+        metrics = showMetrics(yTest, svcPred, 'SVC', False)
+        # if metrics[4] >= aucSVC:
+        #     break
+    
+
+    ## Make Spatial Dataset
+    annPredTrain, annProbaTrain = makeSpatialDataset('ANN', clfANN, dropClm=dropANN)
+    dtcPredTrain, dtcProbaTrain = makeSpatialDataset('DTC', clfDTC, keepClm=keepDTC)
+    kncPredTrain, kncProbaTrain = makeSpatialDataset('KNC', clfKNC, keepClm=keepKNC)
+    lrgPredTrain, lrgProbaTrain = makeSpatialDataset('LRG', clfLRG, dropClm=dropLRG)
+    nbcPredTrain, nbcProbaTrain = makeSpatialDataset('NBC', clfNBC, dropClm=dropNBC)
+    rfcPredTrain, rfcProbaTrain = makeSpatialDataset('RFC', clfRFC, dropClm=dropRFC)
+    svcPredTrain, svcProbaTrain = makeSpatialDataset('SVC', clfSVC, keepClm=keepSVC)
+    print('\nSuccessfully made Spatial Dataset')
+
+
+
+    predictionD = {
+        'ANN': [annPred, annProba, clfANN, annPredTrain, annProbaTrain],
+        'DTC': [dtcPred, dtcProba, clfDTC, dtcPredTrain, dtcProbaTrain],
+        'KNC': [kncPred, kncProba, clfKNC, kncPredTrain, kncProbaTrain],
+        'RFC': [rfcPred, rfcProba, clfRFC, rfcPredTrain, rfcProbaTrain],
+        'LRG': [lrgPred, lrgProba, clfLRG, lrgPredTrain, lrgProbaTrain],
+        'NBC': [nbcPred, nbcProba, clfNBC, nbcPredTrain, nbcProbaTrain],
+        'SVC': [svcPred, svcProba, clfSVC, svcPredTrain, svcProbaTrain],
+    }
+
+
+    ### Saving the individual metrics to cssv file
+    saveIndividualMetrics(predictionD)
+
+    
+    ### Ensemble Model Combinations
+    ensemblePred = zeros(yTest.shape)
+    ensembleProba = zeros(yTest.shape)
+    ensemblePredTrain = zeros(label.shape)
+    ensembleProbaTrain = zeros(label.shape)
+    clfEnsemble = None
+    modelList = list(predictionD.keys())
+    columnsPowerSet = []
+    PowerSet(modelList[:], len(modelList[:]))
+    columnsPowerSet.pop()
+    for l in columnsPowerSet:
+        tmp1 = zeros(shape=annPred.shape)
+        Pred = zeros(shape=annPred.shape)
+        tmp2 = zeros(shape=annPredTrain.shape)
+        PredTrain = zeros(shape=annPredTrain.shape)
+        for m in l:
+            # print(m)
+            # print(tmp1.shape, predictionD[m][1].shape)
+            # print(Pred.shape, predictionD[m][0].shape)            
+            # print(tmp2.shape, predictionD[m][4].shape)
+            # print(PredTrain.shape, predictionD[m][3].shape)
+            tmp1 += predictionD[m][1]
+            Pred += predictionD[m][0]
+            Proba = (tmp1/len(l))
+            tmp2 += predictionD[m][4]
+            PredTrain += predictionD[m][3]
+            ProbaTrain = (tmp2/len(l))
+        # print(Proba)
+        # print(type(Proba))        
+        # print(Pred)
+        # print(type(Pred))
+        # Probability Prediction    
+        metrics1 = showMetrics(yTest, Proba, 'Ensemble Probabilities Testing', False) 
+        metrics2 = showMetrics(label, ProbaTrain, 'Ensemble Probabilities Training', False)        
+        dfFileName1 = f'probabilityEnsembleCombinationsTesting.csv'
+        dfFileName2 = f'probabilityEnsembleCombinationsTraining.csv'
+        dfPath1 = join(dfFolderPath, dfFileName1)
+        dfPath2 = join(dfFolderPath, dfFileName2)
+        try:
+            df1 = read_csv(dfPath1)
+            i = len(df1)
+            df2 = read_csv(dfPath2)
+            j = len(df2)
+        except:
+            df1 = DataFrame()
+            i = 0
+            df2 = DataFrame()
+            j = 0
+        df1.loc[i, 'modelInvolved'] = str(l)
+        df1.loc[i, 'accuracy'] = metrics1[0]
+        df1.loc[i, 'precision'] = metrics1[1]
+        df1.loc[i, 'recall'] = metrics1[2]
+        df1.loc[i, 'f1_score'] = metrics1[3]
+        df1.loc[i, 'roc_auc'] = metrics1[4]
+        df1.to_csv(dfPath1, index=False)
+        df2.loc[j, 'modelInvolved'] = str(l)
+        df2.loc[j, 'accuracy'] = metrics2[0]
+        df2.loc[j, 'precision'] = metrics2[1]
+        df2.loc[j, 'recall'] = metrics2[2]
+        df2.loc[j, 'f1_score'] = metrics2[3]
+        df2.loc[j, 'roc_auc'] = metrics2[4]
+        df2.to_csv(dfPath2, index=False)
+        i += 1
+        j += 1
+
+        # Voted Prediction
+        if len(l)%2 == 1:
+            cutLow = len(l)//2
+            cutMid = None
+            cutHigh = cutLow+1
+        else: 
+            cutLow = len(l)//2
+            cutMid = cutLow+1
+            cutHigh = cutMid+1
+
+        vote = []
+        for i in range(len(Pred)):
+            if Pred[i] <= cutLow:
+                vote.append(0)
+            elif cutMid != None and Pred[i] == cutMid:
+                t = 1 if Proba[i] >= 0.5 else 0
+                vote.append(t)
+            elif Pred[i] >= cutHigh:
+                vote.append(1)
+        voteTrain = []
+        for i in range(len(PredTrain)):
+            if PredTrain[i] <= cutLow:
+                voteTrain.append(0)
+            elif cutMid != None and PredTrain[i] == cutMid:
+                t = 1 if ProbaTrain[i] >= 0.5 else 0
+                voteTrain.append(t)
+            elif PredTrain[i] >= cutHigh:
+                voteTrain.append(1)
+
+        metrics3 = showMetrics(yTest, vote, 'Ensemble Voted Prediction Testing', False) 
+        metrics4 = showMetrics(label, voteTrain, 'Ensemble Voted Prediction Training', False)  
+        dfFileName3 = f'voteEnsembleCombinationsTesting.csv'
+        dfFileName4 = f'voteEnsembleCombinationsTraining.csv'
+        dfPath3 = join(dfFolderPath, dfFileName3)
+        dfPath4 = join(dfFolderPath, dfFileName4)
+        try:
+            df3 = read_csv(dfPath3)
+            i = len(df3)            
+            df4 = read_csv(dfPath4)
+            j = len(df4)
+        except:
+            df3 = DataFrame()
+            i = 0   
+            df4 = DataFrame()
+            j = 0       
+        df3.loc[i, 'modelInvolved'] = str(l)
+        df3.loc[i, 'accuracy'] = metrics3[0]
+        df3.loc[i, 'precision'] = metrics3[1]
+        df3.loc[i, 'recall'] = metrics3[2]
+        df3.loc[i, 'f1_score'] = metrics3[3]
+        df3.loc[i, 'roc_auc'] = metrics3[4]
+        df3.to_csv(dfPath3, index=False)
+        i += 1  
+        df4.loc[j, 'modelInvolved'] = str(l)
+        df4.loc[j, 'accuracy'] = metrics4[0]
+        df4.loc[j, 'precision'] = metrics4[1]
+        df4.loc[j, 'recall'] = metrics4[2]
+        df4.loc[j, 'f1_score'] = metrics4[3]
+        df4.loc[j, 'roc_auc'] = metrics4[4]
+        df4.to_csv(dfPath4, index=False)
+        j += 1  
+        ensemblePred, ensembleProba, clfEnsemble = retBest(vote, Proba, None, ensemblePred, ensembleProba, clfEnsemble)
+        rocTemp = roc_auc_score(label, voteTrain)
+        rocBest = roc_auc_score(label, ensemblePredTrain)
+        if rocTemp > rocBest:
+            ensemblePredTrain, ensembleProbaTrain = voteTrain, ProbaTrain
+        else:
+            ensemblePredTrain, ensembleProbaTrain = ensemblePredTrain, ensembleProbaTrain 
+    
+
+    ### Making Ensemble spatial data and saving testing and training scores
+    dtPrep = noSSData.loc[:, ['Latitude', 'Longitude', 'Target']]
+    dtPrep['Prediction'] = ensemblePredTrain
+    dtPrep['PredictionProbability'] = ensembleProbaTrain
+    fileName = f'SpatialPrediction_Ensemble.csv'
+    dtPrep.to_csv(join(spatialDatasetPath, fileName), index=False)
+    df = read_csv(metricsTrainTestPath)
+    i = len(df)
+    metTest = showMetrics(yTest, ensemblePred, modelName=f'Ensemble Testing', show=False)
+    metTrain = showMetrics(label, ensemblePredTrain, modelName=f'Ensemble Training', show=False)
+    df.loc[i, 'model_name'] = f'Ensemble Testing'
+    df.loc[i, 'accuracy'] = metTest[0]
+    df.loc[i, 'precision'] = metTest[1]
+    df.loc[i, 'recall'] = metTest[2]
+    df.loc[i, 'f1_score'] = metTest[3]
+    df.loc[i, 'roc_auc'] = metTest[4]
+    i += 1
+    df.loc[i, 'model_name'] = f'Ensemble Training'
+    df.loc[i, 'accuracy'] = metTrain[0]
+    df.loc[i, 'precision'] = metTrain[1]
+    df.loc[i, 'recall'] = metTrain[2]
+    df.loc[i, 'f1_score'] = metTrain[3]
+    df.loc[i, 'roc_auc'] = metTrain[4]
+    df.to_csv(metricsTrainTestPath, index=False)
+
+
+    print('\nMean Probability Predicition Testing')
+    print(df1.sort_values(by='roc_auc', axis=0, ascending=False).head(3))
+    print('\nVoted Prediction Testing')
+    print(df3.sort_values(by='roc_auc', axis=0, ascending=False).head(3))
+
+
+
+    ### Make ROC AUC Graph Individual
+    for mdlName in predictionD:
+        fpr, tpr, th = roc_curve(yTest, predictionD[mdlName][1])
+        rocauc = roc_auc_score(yTest, predictionD[mdlName][1])
+        plt.plot(fpr, tpr, label=f'{mdlName} ({round(rocauc, 2)})')
+        plt.title(f'{mdlName} ROC AUC Curve')
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.legend(loc='lower right')
+        plt.show()
+    
+    fpr, tpr, th = roc_curve(yTest, ensembleProba)
+    rocauc = roc_auc_score(yTest, ensemblePred)
+    plt.plot(fpr, tpr, label=f'Ensemble ({round(rocauc, 2)})')
+    plt.title('Ensemble ROC AUC Curves')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.legend(loc='lower right')
+    plt.show()
+
+    ### Make ROC AUC Graph All
+    for mdlName in predictionD:
+        fpr, tpr, th = roc_curve(yTest, predictionD[mdlName][1])
+        rocauc = roc_auc_score(yTest, predictionD[mdlName][1])
+        plt.plot(fpr, tpr, label=f'{mdlName} ({round(rocauc, 2)})')
+        # plt.title(f'{mdlName} ROC AUC Curve')
+        # plt.xlabel('False Positive Rate')
+        # plt.ylabel('True Positive Rate')
+        # plt.legend(loc='lower right')
+        # plt.show()
+    
+    fpr, tpr, th = roc_curve(yTest, ensembleProba)
+    rocauc = roc_auc_score(yTest, ensemblePred)
+    plt.plot(fpr, tpr, label=f'Ensemble ({round(rocauc, 2)})')
+    plt.title('ROC AUC Curves')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.legend(loc='lower right')
+    plt.show()
+
+
+
+    ### Feature Importance Graphs
+    from sklearn.inspection import permutation_importance
+    featImp = {}
+    normalised = {}
+    for item in predictionD:
+        # print(f'{item} coeffs:')
+        if item == 'ANN':
+            allWeights = clfANN.get_weights()
+            wghFirstLayer = zeros(allWeights[0].shape)
+            for i in range(4):
+                wghFirstLayer += allWeights[i]
+            wghFirstLayer = wghFirstLayer/i
+            featImp[item] = wghFirstLayer
+        else:
+            feats, negFeats = retSubsetFeatures(item)
+            featImp[item] = permutation_importance(predictionD[item][2], feats, label, scoring='accuracy').importances_mean
+        # print('Type:', type(featImp[item]))
+        # print('Length:', len(featImp[item]))
+        # print('Sum:', sum(featImp[item]))
+        normalised[item] = featImp[item]/sum(featImp[item])
+        # print('Normalised Shape: ', normalised[item].shape)
+        # print('Normalised Sum: ', sum(normalised[item]))
+        temp = plotFeatureImportances(normalised[item], item)
+        normalised[item] = temp.drop(['ModelName'], axis=1)
+        # print()
+    
+    print('Ensemble coeffs')
+    featImpEnsemble = zeros(normalised['ANN'].shape)
+    for item in normalised:
+        # print(normalised[item])
+        featImpEnsemble += normalised[item].to_numpy()
+    featImpEnsemble = featImpEnsemble[0]
+    # print('Values:\n', (featImpEnsemble))
+    # print('Length:', len(featImpEnsemble))
+    # print('Sum:', sum(featImpEnsemble))
+    normalisedEnsemble = featImpEnsemble/sum(featImpEnsemble)
+    # print(normalisedEnsemble)
+    # print(sum(normalisedEnsemble))
+    plotFeatureImportances(normalisedEnsemble, 'Ensemble')
+
+    t1 = time.time()
+    t = time.strftime('%H:%M:%S', time.gmtime(t1-t0))
+    print('Total time taken: ', t)
+

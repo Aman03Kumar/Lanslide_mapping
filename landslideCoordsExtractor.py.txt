@@ -1,0 +1,24 @@
+from pandas import read_csv
+
+globalDataPath = r"D:\Project\Sem7\LandslideHistory\nasa_global_landslide_catalog_point.csv"
+outPath = r"D:\Project\Sem7\LandslideHistory\DarjeelingSikkim.csv"
+
+extent = {
+    'top': 28.130968,
+    'bottom': 26.446251,
+    'left': 87.990051,
+    'right': 88.919731,
+}
+
+Data = read_csv(globalDataPath)
+dataAOI = Data[(Data.latitude >= extent['bottom']) & (Data.latitude <= extent['top']) &
+               (Data.longitude >= extent['left']) & (Data.longitude <= extent['right'])]
+dataAOI = dataAOI[dataAOI.country_name == 'India']
+
+print(dataAOI.columns)
+
+dataAOI = dataAOI.loc[:, ('event_date', 'event_time', 'location_description', 'landslide_category', 'landslide_trigger',
+                          'landslide_size', 'landslide_setting', 'latitude', 'longitude', 'country_name', 'admin_division_name')]
+
+print(dataAOI)
+dataAOI.to_csv(outPath, index=False)

@@ -1,0 +1,372 @@
+from pandas import read_csv, DataFrame
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from os.path import join
+
+
+seed = 42
+dataPath = r"D:\Sem__Project\Sem8\DataPrepared\data0Prepared.csv"
+
+# Meta-heuristic constants
+eph = 1e3
+earlyStop = 10
+N = 10
+
+
+def splitData(features, label):
+    global xTrain, xTest, yTrain, yTest, xVal, yVal
+    xTrain, xTest, yTrain, yTest = train_test_split(features, label, test_size=0.2, random_state=seed)
+    xTrain, xVal, yTrain, yVal = train_test_split(xTrain, yTrain, test_size=0.25, random_state=seed)
+
+
+def showMetrics(yPred, modelName):
+    yPred = [ele > 0.50 for ele in yPred]
+    print(modelName)
+    acc = round(accuracy_score(yTest, yPred), 4)
+    prsc = round(precision_score(yTest, yPred), 4)
+    rcll = round(recall_score(yTest, yPred), 4)
+    f1 = round(f1_score(yTest, yPred), 4)
+    roc = round(roc_auc_score(yTest, yPred), 4)
+    print('Confusion Matrix:\n', confusion_matrix(yTest, yPred))
+    print('Accuracy Score:', acc)
+    print('Precision Score:', prsc)
+    print('Recall Score:', rcll)
+    print('F1 Score:', f1)
+    print('ROC AUC score:', roc)
+    return (acc, prsc, rcll, f1, roc)
+
+
+# Lower and Upper bound
+#        0,    1,    2,    3,    4,   5,  6,    7,   8,    9,  10
+lb = [   1,    0, 2e-4,  0.5,    1, 0.5, -1,    0,  90,    0,  -2]
+ub = [1.99, 0.99, 9e-3,  1.5, 1.99, 1.5, -1, 0.99, 110, 1.99,   0]
+# 
+# Default Values
+
+# Encoders
+penalty = { 0: 'l1', 1: 'l2', 2: 'elasticnet', 3: None, }
+solver = { 0: 'lbfgs', 1: 'liblinear', 2: 'newton-cg', 3: 'newton-cholesky', 4: 'sag', 5: 'saga' }
+multiClass = { 0: 'auto', 1: 'ovr', 2: 'multinomial' }
+
+
+def makeHyperparameters(sol):
+    # print(sol)
+    pnltyEnc = int(sol[0])
+    pnlty = penalty[pnltyEnc]
+    dual = bool(int(sol[1]))
+    tol = int(sol[2])
+    C = sol[3]
+    fitIntrcpt = bool(int(sol[4]))
+    intrcptScaling = sol[5]
+    rndState = int(sol[6])
+    if rndState < 0:
+        rndState = None
+    slvEnc = int(sol[7])
+    slv = solver[slvEnc]
+    maxIter = int(sol[8])
+    multiEnc = int(sol[9])
+    multi = multiClass[multiEnc]
+    l1ratio = sol[10]
+    if l1ratio < 0:
+        l1ratio = None
+    # print([pnlty, dual, tol, C, fitIntrcpt, intrcptScaling, rndState, solver, maxIter, multi, l1ratio])
+    params = {
+        'penalty': pnlty,
+        'dual': dual,
+        'tol': tol,
+        'C': C,
+        'fit_intercept': fitIntrcpt,
+        'intercept_scaling': intrcptScaling,
+        'random_state': rndState,
+        'solver': slv,
+        'max_iter': maxIter,
+        'multi_class': multi,
+        'n_jobs': 11,
+        'l1_ratio': l1ratio,
+    }
+    # print(params)
+    return params
+
+def fitness(sol):
+    hyperparameters = makeHyperparameters(sol)
+    try:
+        regg = LogisticRegression(**hyperparameters)
+        regg.fit(X=xTrain, y=yTrain)
+    except:
+        return 0
+    else:
+        yP = regg.predict(X=xVal)
+        roc = roc_auc_score(yVal, yP)
+        return roc
+        # r2 = mt.r2_score(yVal, yP)
+        # return r2
+    
+
+def metaheuristicHypertune(optm):
+    '''Hypertuning of parameters of Logistic Regression'''
+
+    prb = {
+        'fit_func': fitness,
+        'lb': lb,
+        'ub': ub,
+        'minmax': 'max'
+    }
+    trmn = {
+        'max_early_stop': earlyStop
+    }
+
+    try:    
+        sol, bestFit = optm.solve(problem=prb, termination=trmn)
+        # print('Solution:\n', sol)
+        #Best model evaluation
+        bestHyperparameters = makeHyperparameters(sol)
+        bestModel = LogisticRegression(**bestHyperparameters)
+        bestModel.fit(X=xTrain, y=yTrain)
+    except Exception as e:
+        bestHyperparameters = e
+        metrics = (0, 0, 0, 0, 0)
+        bestFit = 0
+    else:         
+        yPred = bestModel.predict(X=xTest)
+        metrics = showMetrics(yPred, 'Logistic Regression Classifier Optimised')
+        print('Best Fit:\n', bestFit)
+
+    return bestHyperparameters, metrics, bestFit
+
+
+
+def bayesOpt(penalty, dual, tol, C, fit_intercept, intercept_scaling, random_state, solver,
+             max_iter, multi_class, l1_ratio):
+
+    sol = [penalty, dual, tol, C, fit_intercept, intercept_scaling, random_state, solver,
+             max_iter, multi_class, l1_ratio]
+    params = makeHyperparameters(sol)
+
+    model = LogisticRegression(**params)
+    
+    model.fit(xTrain, yTrain)
+    pred = model.predict(xVal)
+    return roc_auc_score(yVal, pred)
+
+
+def bayesOptimisation(nIter=10):
+    from bayes_opt import BayesianOptimization
+    params = {
+        'penalty': (lb[0], ub[0]),
+        'dual': (lb[1], ub[1]),
+        'tol': (lb[2], ub[2]),
+        'C': (lb[3], ub[3]),
+        'fit_intercept': (lb[4], ub[4]),
+        'intercept_scaling': (lb[5], ub[5]),
+        'random_state': (lb[6], ub[6]),
+        'solver': (lb[7], ub[7]),
+        'max_iter': (lb[8], ub[8]),
+        'multi_class': (lb[9], ub[9]),
+        'l1_ratio': (lb[10], ub[10]),
+    }
+
+    optimise = BayesianOptimization(bayesOpt, params, random_state=seed)
+    optimise.maximize(n_iter=nIter, init_points=10)
+
+    bestParams = optimise.max['params']
+    penalty = bestParams['penalty']
+    dual = bestParams['dual']
+    tol = bestParams['tol']
+    C = bestParams['C']
+    fit_intercept =  bestParams['fit_intercept']
+    intercept_scaling = bestParams['intercept_scaling']
+    random_state = bestParams['random_state']
+    solver = bestParams['solver']
+    max_iter = bestParams['max_iter']
+    multi_class = bestParams['multi_class']
+    l1_ratio = bestParams['l1_ratio']
+    sol = [penalty, dual, tol, C, fit_intercept, intercept_scaling, random_state, solver,
+             max_iter, multi_class, l1_ratio]
+    bestParams = makeHyperparameters(sol)
+
+    print(bestParams)
+    regg = LogisticRegression(**bestParams)
+    try:
+        regg.fit(xTrain, yTrain)
+        yPred = regg.predict(xTest)
+        metrics = showMetrics(yPred, 'LRG Optimised by Bayes Optimisation')
+    except:
+        metrics = (0, 0, 0, 0, 0)
+    return bestParams, metrics
+
+
+def PowerSet(s, n): 
+    '''Function to print the power set'''
+    def findPowerSet(s, res, n): 
+        if (n == 0): 
+            temp = []
+            for i in res: 
+                temp.append(i) 
+            columnsPowerSet.append(temp)
+            return
+    
+        # append the subset to result 
+        res.append(s[n - 1]) 
+        findPowerSet(s, res, n - 1) 
+        res.pop() 
+        findPowerSet(s, res, n - 1) 
+
+    ans = [] 
+    findPowerSet(s, ans, n)
+
+
+
+def columnInclusion(optName='BayesOpt'):
+    '''Hyper tuning by including columns'''
+
+    Column = ['latitude', 'longitude', 'twi', 'tpi', 'slope', 'rainfall', 'hillshade',
+       'elevation', 'drainageDensity', 'profileCurvature', 'planCurvature',
+       'curvature', 'aspect', 'lulc', 'soilType',]
+    
+    dfFileName = f'columnInclusionFeatsSelect{optName}LRG.csv'
+    dfPath = join(r"D:\Sem__Project\Sem8\Python\reportFiles", dfFileName)
+    columnsPowerSet = []
+    PowerSet(Column[:], len(Column[:]))
+    columnsPowerSet.pop()
+    for i in reversed(range(0, len(columnsPowerSet))):
+        data = read_csv(dataPath)
+        try:
+            columnsPowerSet[i].remove('soilType')
+            columnsPowerSet[i] += ['Soil1', 'Soil2', 'Soil3', 'Soil4', 'Soil5']
+        except:
+            pass
+        try: 
+            columnsPowerSet[i].remove('lulc')
+            columnsPowerSet[i] += ['LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11']
+        except:
+            pass
+        try:
+            df = read_csv(dfPath)
+        except:
+            df = DataFrame(columns=['accuracy', 'precision', 'recall', 'f1_score', 'roc_auc', 'includedColumns', 'params', ])
+        print('Included columns:\n', columnsPowerSet[i])
+        features = data.loc[:, columnsPowerSet[i]]
+        label = data.iloc[:, -1]
+        splitData(features, label)
+
+        if optName.lower()[0] == 'b':
+            params, metrics = bayesOptimisation()
+            df.loc[i, 'includedColumns'] = str(columnsPowerSet[i])
+            df.loc[i, 'params'] = str(params)
+            df.loc[i, 'accuracy'] = metrics[0]
+            df.loc[i, 'precision'] = metrics[1]
+            df.loc[i, 'recall'] = metrics[2]
+            df.loc[i, 'f1_score'] = metrics[3]
+            df.loc[i, 'roc_auc'] = metrics[4]
+        elif optName.lower()[0] == 'm':
+            from metaHeuristicOptimizers import getOptimizersDictionary
+            dictOpt = getOptimizersDictionary(epochs=eph, population=N)
+            for k in range(0, len(dictOpt.keys())):
+                print('\n\nHeuristic k: ', k)
+                key = list(dictOpt.keys())[k]
+                params, metrics, bestFit = metaheuristicHypertune(dictOpt[key])
+                df.loc[i, 'includedColumns'] = str(columnsPowerSet[i])
+                df.loc[i, 'meteHeuristic'] = str(key)
+                df.loc[i, 'params'] = str(params)
+                df.loc[i, 'accuracy'] = metrics[0]
+                df.loc[i, 'precision'] = metrics[1]
+                df.loc[i, 'recall'] = metrics[2]
+                df.loc[i, 'f1_score'] = metrics[3]
+                df.loc[i, 'roc_auc'] = metrics[4]
+                df.loc[i, 'bestFit'] = bestFit
+
+        df.to_csv(dfPath, index=False)
+
+
+def columnExclusion(optName='BayesOpt'):
+    '''Hyper tuning by removing columns'''
+
+    Column = ['latitude', 'longitude', 'twi', 'tpi', 'slope', 'rainfall', 'hillshade',
+       'elevation', 'drainageDensity', 'profileCurvature', 'planCurvature',
+       'curvature', 'aspect', 'lulc', 'soilType']
+    
+    # Column.remove('Latitude')
+    dfFileName = f'columnExclusionFeatsSelect{optName}LRG.csv'
+    dfPath = join(r"D:\Sem__Project\Sem8\Python\reportFiles", dfFileName)
+    for item in Column:
+        data = read_csv(dataPath)
+        clm = [item, ]
+        try:
+            df = read_csv(dfPath)
+            i = len(df)
+        except:
+            df = DataFrame(columns=['accuracy', 'precision', 'recall', 'f1_score', 'roc_auc', 'excludedColumns', 'params', ])
+            i = 0
+        if item == 'lulc':
+            clm = ['LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11']
+        if item == 'soilType':
+            clm = ['Soil1', 'Soil2', 'Soil3', 'Soil4', 'Soil5']
+        print('Excluded columns: \n', clm)
+        data = data.drop(clm, axis=1)
+        features = data.iloc[:, :-1]
+        label = data.iloc[:, -1]
+        splitData(features, label)
+
+        if optName.lower()[0] == 'b':
+            params, metrics = bayesOptimisation()
+            df.loc[i, 'excludedColumns'] = str(clm)
+            df.loc[i, 'params'] = str(params)
+            df.loc[i, 'accuracy'] = metrics[0]
+            df.loc[i, 'precision'] = metrics[1]
+            df.loc[i, 'recall'] = metrics[2]
+            df.loc[i, 'f1_score'] = metrics[3]
+            df.loc[i, 'roc_auc'] = metrics[4]
+            df.to_csv(dfPath, index=False)
+            i += 1
+        elif optName.lower()[0] == 'm':
+            from metaHeuristicOptimizers import getOptimizersDictionary
+            dictOpt = getOptimizersDictionary(epochs=eph, population=N)
+            for k in range(0, len(dictOpt.keys())):
+                print('\n\nHeuristic k: ', k)
+                key = list(dictOpt.keys())[k]
+                params, metrics, bestFit = metaheuristicHypertune(dictOpt[key])
+                df.loc[i, 'excludedColumns'] = str(clm)
+                df.loc[i, 'meteHeuristic'] = str(key)
+                df.loc[i, 'params'] = str(params)
+                df.loc[i, 'accuracy'] = metrics[0]
+                df.loc[i, 'precision'] = metrics[1]
+                df.loc[i, 'recall'] = metrics[2]
+                df.loc[i, 'f1_score'] = metrics[3]
+                df.loc[i, 'roc_auc'] = metrics[4]
+                df.loc[i, 'bestFit'] = bestFit
+                df.to_csv(dfPath, index=False)
+                i += 1
+        
+
+
+def normalLRG(optType='bayes'):
+    '''Normal check of Logistic Regressor'''
+
+    data = read_csv(dataPath)
+    features = data.iloc[:, :-1]
+    label = data.iloc[:, -1]
+    splitData(features, label)
+
+    if optType == 'bayes':
+        params, metrics = bayesOptimisation(nIter=40)
+    elif optType == 'metaheuristic':
+        params, metrics = metaheuristicHypertune()
+
+    print('Optimised Parameters: \n', params)
+
+
+
+if __name__ == '__main__':
+    import time
+    t0 = time.time()
+    global columnsPowerSet 
+
+    
+    # normalLGR('metaheuristic')
+    columnExclusion('metaheuristic')
+
+
+    t1 = time.time()
+    t = time.strftime('%H:%M:%S', time.gmtime(t1-t0))
+    print('Total time taken: ', t)

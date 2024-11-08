@@ -1,0 +1,793 @@
+from mealpy.bio_based.BBOA import OriginalBBOA
+# No use
+
+from mealpy.bio_based.SOS import OriginalSOS
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8561020036429873
+Confusion Matrix:
+ [[71  4]
+ [25 26]]
+Accuracy Score: 0.7698
+Precision Score: 0.8667
+Recall Score: 0.5098
+F1 Score: 0.642
+ROC AUC score: 0.7282
+Optimised Parameters:
+ {'n_estimators': 63, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 1, 'min_weight_fraction_leaf': 0.0, 'max_features': 0.1795018859812936, 'max_leaf_nodes': None, 
+ 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': None, 'ccp_alpha': 0.0, 'max_samples': None}
+
+
+Logistic Regression Optimised
+Best Fit:
+ 0.8305288461538461
+Confusion Matrix:
+ [[50  1]
+ [13 20]]
+Accuracy Score: 0.8333
+Precision Score: 0.9524
+Recall Score: 0.6061
+F1 Score: 0.7407
+ROC AUC score: 0.7932
+Optimised Parameters:
+ {'penalty': 'l2', 'dual': False, 'tol': 0, 'C': 1.1345204629629067, 'fit_intercept': True, 'intercept_scaling': 1.4018939083365445, 'random_state': None, 'solver': 'lbfgs', 'max_iter': 93, 
+ 'multi_class': 'auto', 'n_jobs': 11, 'l1_ratio': None}
+
+ 
+K Neighbors Classifier Optimised
+Best Fit:
+ 0.8016826923076923
+Confusion Matrix:
+ [[45  6]
+ [17 16]]
+Accuracy Score: 0.7262
+Precision Score: 0.7273
+Recall Score: 0.4848
+F1 Score: 0.5818
+ROC AUC score: 0.6836
+Optimised Parameters:
+ {'n_neighbors': 214, 'weights': 'distance', 'algorithm': 'ball_tree', 'leaf_size': 74437, 'p': 10541, 'metric': 'minkowski'}
+
+
+Support Vector Classifier Optimised
+ Best Fit:
+ 0.7428658166363085
+Confusion Matrix:
+ [[72  3]
+ [28 23]]
+Accuracy Score: 0.754
+Precision Score: 0.8846
+Recall Score: 0.451
+F1 Score: 0.5974
+ROC AUC score: 0.7055
+Optimised Parameters:
+ {'C': 0.08921647426035921, 'kernel': 'linear', 'degree': 2, 'gamma': 'auto', 'coef0': 0.48105960170711, 'shrinking': True, 'tol': 0.03281273708978026, 'cache_size': 207, 'max_iter': 23896, 
+ 'decision_function_shape': 'ovr', 'random_state': None}
+'''
+
+from mealpy.bio_based.TSA import OriginalTSA
+
+from mealpy.evolutionary_based.ES import CMA_ES
+# numpy.core._exceptions.MemoryError: Unable to allocate 13.7 GiB for an array with shape (42925, 42925) and data type float64 
+
+from mealpy.evolutionary_based.ES import Simple_CMA_ES
+# numpy.core._exceptions.MemoryError: Unable to allocate 13.7 GiB for an array with shape (42925, 42925) and data type float64
+
+from mealpy.human_based.FBIO import BaseFBIO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.895264116575592
+Confusion Matrix:
+ [[59 16]
+ [19 32]]
+Accuracy Score: 0.7222
+Precision Score: 0.6667
+Recall Score: 0.6275
+F1 Score: 0.6465
+ROC AUC score: 0.7071
+Optimised Parameters:
+ {'n_estimators': 50, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.0018637585088472233, 'min_samples_leaf': 0.04959802430297309, 'min_weight_fraction_leaf': 0.0, 'max_features': 0.0016436614893157455, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+
+'''
+
+from mealpy.human_based.FBIO import OriginalFBIO
+'''Random Forest Classifier Optimised
+Best Fit:
+ 0.8849423193685488
+Confusion Matrix:
+ [[67  8]
+ [24 27]]
+Accuracy Score: 0.746
+Precision Score: 0.7714
+Recall Score: 0.5294
+F1 Score: 0.6279
+ROC AUC score: 0.7114
+Optimised Parameters:
+ {'n_estimators': 150, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 4, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:15:28
+'''
+
+from mealpy.human_based.LCO import ImprovedLCO
+
+from mealpy.human_based.QSA import BaseQSA
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.895264116575592
+Confusion Matrix:
+ [[65 10]
+ [22 29]]
+Accuracy Score: 0.746
+Precision Score: 0.7436
+Recall Score: 0.5686
+F1 Score: 0.6444
+ROC AUC score: 0.7176
+Optimised Parameters:
+ {'n_estimators': 116, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 3, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:07:22
+'''
+
+from mealpy.human_based.QSA import ImprovedQSA
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8664238008500303
+Confusion Matrix:
+ [[63 12]
+ [22 29]]
+Accuracy Score: 0.7302
+Precision Score: 0.7073
+Recall Score: 0.5686
+F1 Score: 0.6304
+ROC AUC score: 0.7043
+Optimised Parameters:
+ {'n_estimators': 22, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.20844189836321103, 'min_samples_leaf': 1, 'min_weight_fraction_leaf': 0.0, 'max_features': 'sqrt', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:05:28
+'''
+
+from mealpy.human_based.QSA import LevyQSA
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8849423193685488
+Confusion Matrix:
+ [[68  7]
+ [25 26]]
+Accuracy Score: 0.746
+Precision Score: 0.7879
+Recall Score: 0.5098
+F1 Score: 0.619
+ROC AUC score: 0.7082
+Optimised Parameters:
+ {'n_estimators': 200, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 4, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:08:01
+'''
+
+from mealpy.human_based.QSA import OppoQSA
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8891924711596844
+Confusion Matrix:
+ [[64 11]
+ [17 34]]
+Accuracy Score: 0.7778
+Precision Score: 0.7556
+Recall Score: 0.6667
+F1 Score: 0.7083
+ROC AUC score: 0.76
+Optimised Parameters:
+ {'n_estimators': 13, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 0.10714908932387769, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:13:30
+'''
+
+from mealpy.human_based.QSA import OriginalQSA
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8685488767455981
+Confusion Matrix:
+ [[65 10]
+ [18 33]]
+Accuracy Score: 0.7778
+Precision Score: 0.7674
+Recall Score: 0.6471
+F1 Score: 0.7021
+ROC AUC score: 0.7569
+Optimised Parameters:
+ {'n_estimators': 156, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 0.09736956997301663, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:04:32
+'''
+
+from mealpy.human_based.SPBO import DevSPBO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+Confusion Matrix:
+ [[69  6]
+ [24 27]]
+Accuracy Score: 0.7619
+Precision Score: 0.8182
+Recall Score: 0.5294
+F1 Score: 0.6429
+ROC AUC score: 0.7247
+Optimised Parameters:
+ {'n_estimators': 130, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 3, 'min_samples_leaf': 1, 'min_weight_fraction_leaf': 0.0, 'max_features': 'sqrt', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': None, 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:01:15
+'''
+
+from mealpy.human_based.SPBO import OriginalSPBO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8870673952641165
+Confusion Matrix:
+ [[65 10]
+ [22 29]]
+Accuracy Score: 0.746
+Precision Score: 0.7436
+Recall Score: 0.5686
+F1 Score: 0.6444
+ROC AUC score: 0.7176
+Optimised Parameters:
+ {'n_estimators': 137, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 4, 'min_weight_fraction_leaf': 0.0, 'max_features': 0.003904069269464601, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:32:24
+'''
+
+from mealpy.human_based.SSDO import OriginalSSDO
+
+from mealpy.human_based.TLO import BaseTLO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8746205221615058
+Confusion Matrix:
+ [[68  7]
+ [24 27]]
+Accuracy Score: 0.754
+Precision Score: 0.7941
+Recall Score: 0.5294
+F1 Score: 0.6353
+ROC AUC score: 0.718
+Optimised Parameters:
+ {'n_estimators': 45, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 4, 'min_samples_leaf': 3, 'min_weight_fraction_leaf': 0.0, 'max_features': 'log2', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:02:51
+'''
+
+from mealpy.human_based.TLO import OriginalTLO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8685488767455981
+Confusion Matrix:
+ [[66  9]
+ [16 35]]
+Accuracy Score: 0.8016
+Precision Score: 0.7955
+Recall Score: 0.6863
+F1 Score: 0.7368
+ROC AUC score: 0.7831
+Optimised Parameters:
+ {'n_estimators': 29, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.09412557368942971, 'min_samples_leaf': 3, 'min_weight_fraction_leaf': 0.0, 'max_features': 'log2', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:01:42
+'''
+
+from mealpy.human_based.TOA import OriginalTOA
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.9077109896782027
+Confusion Matrix:
+ [[63 12]
+ [18 33]]
+Accuracy Score: 0.7619
+Precision Score: 0.7333
+Recall Score: 0.6471
+F1 Score: 0.6875
+ROC AUC score: 0.7435
+Optimised Parameters:
+ {'n_estimators': 36, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.812448104700223, 'min_samples_leaf': 3, 'min_weight_fraction_leaf': 0.0, 'max_features': 'sqrt', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:09:49
+'''
+
+from mealpy.math_based.CGO import OriginalCGO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8642987249544626
+Confusion Matrix:
+ [[67  8]
+ [21 30]]
+Accuracy Score: 0.7698
+Precision Score: 0.7895
+Recall Score: 0.5882
+F1 Score: 0.6742
+ROC AUC score: 0.7408
+Optimised Parameters:
+ {'n_estimators': 144, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 5, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 'log2', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:09:31
+'''
+
+from mealpy.math_based.INFO import OriginalINFO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.921979356405586
+Confusion Matrix:
+ [[65 10]
+ [17 34]]
+Accuracy Score: 0.7857
+Precision Score: 0.7727
+Recall Score: 0.6667
+F1 Score: 0.7158
+ROC AUC score: 0.7667
+Optimised Parameters:
+ {'n_estimators': 20, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 3, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 'log2', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:00:32
+
+'''
+
+from mealpy.math_based.RUN import OriginalRUN
+'''
+Best Fit:
+ 0.8685488767455981
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[61 14]
+ [16 35]]
+Accuracy Score: 0.7619
+Precision Score: 0.7143
+Recall Score: 0.6863
+F1 Score: 0.7
+ROC AUC score: 0.7498
+Optimised Parameters:
+ {'n_estimators': 200, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 5, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:01:46
+'''
+
+from mealpy.math_based.SCA import BaseSCA
+
+from mealpy.math_based.SCA import OriginalSCA
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8664238008500303
+Confusion Matrix:
+ [[63 12]
+ [22 29]]
+Accuracy Score: 0.7302
+Precision Score: 0.7073
+Recall Score: 0.5686
+F1 Score: 0.6304
+ROC AUC score: 0.7043
+Optimised Parameters:
+ {'n_estimators': 200, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 5, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:02:03
+'''
+
+from mealpy.math_based.SHIO import OriginalSHIO
+
+from mealpy.physics_based.CDO import OriginalCDO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8870673952641165
+Confusion Matrix:
+ [[65 10]
+ [20 31]]
+Accuracy Score: 0.7619
+Precision Score: 0.7561
+Recall Score: 0.6078
+F1 Score: 0.6739
+ROC AUC score: 0.7373
+Optimised Parameters:
+ {'n_estimators': 116, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:02:07
+'''
+
+from mealpy.physics_based.EO import AdaptiveEO
+
+from mealpy.physics_based.EO import ModifiedEO
+'''
+Best Fit:
+ 0.8870673952641165
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[66  9]
+ [20 31]]
+Accuracy Score: 0.7698
+Precision Score: 0.775
+Recall Score: 0.6078
+F1 Score: 0.6813
+ROC AUC score: 0.7439
+Optimised Parameters:
+ {'n_estimators': 132, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.09507799929627547, 'min_samples_leaf': 0.009460067191387636, 'min_weight_fraction_leaf': 0.0, 'max_features': 0.009294527703125484, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 12, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}        
+Total time taken:  00:04:08
+'''
+
+from mealpy.physics_based.EO import OriginalEO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8582270795385549
+Confusion Matrix:
+ [[66  9]
+ [19 32]]
+Accuracy Score: 0.7778
+Precision Score: 0.7805
+Recall Score: 0.6275
+F1 Score: 0.6957
+ROC AUC score: 0.7537
+Optimised Parameters:
+ {'n_estimators': 89, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.1714184229651745, 'min_samples_leaf': 4, 'min_weight_fraction_leaf': 0.0, 'max_features': 'log2', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:02:41
+'''
+
+from mealpy.physics_based.EVO import OriginalEVO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.7902246508803886
+Confusion Matrix:
+ [[71  4]
+ [26 25]]
+Accuracy Score: 0.7619
+Precision Score: 0.8621
+Recall Score: 0.4902
+F1 Score: 0.625
+ROC AUC score: 0.7184
+Optimised Parameters:
+ {'n_estimators': 95, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 4, 'min_samples_leaf': 2, 'min_weight_fraction_leaf': 0.0, 'max_features': 'sqrt', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:02:01
+'''
+
+from mealpy.physics_based.NRO import OriginalNRO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8685488767455981
+Confusion Matrix:
+ [[63 12]
+ [17 34]]
+Accuracy Score: 0.7698
+Precision Score: 0.7391
+Recall Score: 0.6667
+F1 Score: 0.701
+ROC AUC score: 0.7533
+Optimised Parameters:
+ {'n_estimators': 200, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 5, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:06:17
+'''
+
+from mealpy.physics_based.TWO import EnhancedTWO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.895264116575592
+Confusion Matrix:
+ [[60 15]
+ [17 34]]
+Accuracy Score: 0.746
+Precision Score: 0.6939
+Recall Score: 0.6667
+F1 Score: 0.68
+ROC AUC score: 0.7333
+Optimised Parameters:
+ {'n_estimators': 3, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 4, 'min_weight_fraction_leaf': 0.0, 'max_features': 'log2', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:03:02
+'''
+
+from mealpy.physics_based.TWO import LevyTWO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8664238008500303
+Confusion Matrix:
+ [[65 10]
+ [23 28]]
+Accuracy Score: 0.7381
+Precision Score: 0.7368
+Recall Score: 0.549
+F1 Score: 0.6292
+ROC AUC score: 0.7078
+Optimised Parameters:
+ {'n_estimators': 149, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 4, 'min_samples_leaf': 4, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:05:04
+'''
+
+from mealpy.physics_based.TWO import OppoTWO
+
+from mealpy.physics_based.TWO import OriginalTWO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.8418336369156041
+Confusion Matrix:
+ [[65 10]
+ [21 30]]
+Accuracy Score: 0.754
+Precision Score: 0.75
+Recall Score: 0.5882
+F1 Score: 0.6593
+ROC AUC score: 0.7275
+Optimised Parameters:
+ {'n_estimators': 66, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 3, 'min_samples_leaf': 3, 'min_weight_fraction_leaf': 0.0, 'max_features': 0.025592966760292324, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:01:10
+'''
+
+from mealpy.swarm_based.ALO import BaseALO
+'''
+Random Forest Classifier Optimised
+Best Fit:
+ 0.7923497267759563
+Confusion Matrix:
+ [[69  6]
+ [25 26]]
+Accuracy Score: 0.754
+Precision Score: 0.8125
+Recall Score: 0.5098
+F1 Score: 0.6265
+ROC AUC score: 0.7149
+Optimised Parameters:
+ {'n_estimators': 177, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 3, 'min_samples_leaf': 2, 'min_weight_fraction_leaf': 0.0, 'max_features': 0.07532504773812043, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:01:46
+'''
+
+from mealpy.swarm_based.ALO import OriginalALO
+'''
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[68  7]
+ [21 30]]
+Accuracy Score: 0.7778
+Precision Score: 0.8108
+Recall Score: 0.5882
+F1 Score: 0.6818
+ROC AUC score: 0.7475
+Optimised Parameters:
+ {'n_estimators': 134, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 2, 'min_samples_leaf': 2, 'min_weight_fraction_leaf': 0.0, 'max_features': 'log2', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:01:19
+'''
+
+from mealpy.swarm_based.AO import OriginalAO
+
+from mealpy.swarm_based.ARO import IARO
+'''
+Best Fit:
+ 0.8706739526411658
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[64 11]
+ [17 34]]
+Accuracy Score: 0.7778
+Precision Score: 0.7556
+Recall Score: 0.6667
+F1 Score: 0.7083
+ROC AUC score: 0.76
+Optimised Parameters:
+ {'n_estimators': 109, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.19730360516900797, 'min_samples_leaf': 2, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:01:36
+'''
+
+from mealpy.swarm_based.ARO import LARO
+
+from mealpy.swarm_based.ARO import OriginalARO
+'''
+Best Fit:
+ 0.8849423193685488
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[70  5]
+ [26 25]]
+Accuracy Score: 0.754
+Precision Score: 0.8333
+Recall Score: 0.4902
+F1 Score: 0.6173
+ROC AUC score: 0.7118
+Optimised Parameters:
+ {'n_estimators': 200, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 5, 'min_samples_leaf': 2, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:04:36
+'''
+
+from mealpy.swarm_based.CoatiOA import OriginalCoatiOA
+'''
+Best Fit:
+ 0.8642987249544626
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[67  8]
+ [25 26]]
+Accuracy Score: 0.7381
+Precision Score: 0.7647
+Recall Score: 0.5098
+F1 Score: 0.6118
+ROC AUC score: 0.7016
+Optimised Parameters:
+ {'n_estimators': 106, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 5, 'min_samples_leaf': 2, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:04:06
+'''
+
+from mealpy.swarm_based.DO import OriginalDO
+'''
+Best Fit:
+ 0.8479052823315117
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[68  7]
+ [23 28]]
+Accuracy Score: 0.7619
+Precision Score: 0.8
+Recall Score: 0.549
+F1 Score: 0.6512
+ROC AUC score: 0.7278
+Optimised Parameters:
+ {'n_estimators': 83, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 4, 'min_samples_leaf': 2, 'min_weight_fraction_leaf': 0.0, 'max_features': 'log2', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:02:20
+'''
+
+from mealpy.swarm_based.ESOA import OriginalESOA
+'''
+Best Fit:
+ 0.8870673952641165
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[65 10]
+ [21 30]]
+Accuracy Score: 0.754
+Precision Score: 0.75
+Recall Score: 0.5882
+F1 Score: 0.6593
+ROC AUC score: 0.7275
+Optimised Parameters:
+ {'n_estimators': 85, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 0.12387602902057751, 'min_samples_leaf': 0.00010097069055464915, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': False, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:07:29
+'''
+from mealpy.swarm_based.FFO import OriginalFFO
+'''
+Best Fit:
+ 0.8706739526411658
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[65 10]
+ [19 32]]
+Accuracy Score: 0.7698
+Precision Score: 0.7619
+Recall Score: 0.6275
+F1 Score: 0.6882
+ROC AUC score: 0.7471
+Optimised Parameters:
+ {'n_estimators': 38, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 4, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:03:07
+'''
+
+from mealpy.swarm_based.FOA import BaseFOA
+'''
+Best Fit:
+ 0.8746205221615058
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[67  8]
+ [23 28]]
+Accuracy Score: 0.754
+Precision Score: 0.7778
+Recall Score: 0.549
+F1 Score: 0.6437
+ROC AUC score: 0.7212
+Optimised Parameters:
+ {'n_estimators': 187, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 5, 'min_samples_leaf': 3, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:01:42
+'''
+
+from mealpy.swarm_based.FOA import OriginalFOA
+'''
+Best Fit:
+ 0.8685488767455981
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[64 11]
+ [21 30]]
+Accuracy Score: 0.746
+Precision Score: 0.7317
+Recall Score: 0.5882
+F1 Score: 0.6522
+ROC AUC score: 0.7208
+Optimised Parameters:
+ {'n_estimators': 78, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 5, 'min_samples_leaf': 4, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced_subsample', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:03:48
+'''
+
+from mealpy.swarm_based.FOA import WhaleFOA
+'''
+Best Fit:
+ 0.9055859137826352
+Random Forest Classifier Optimised
+Confusion Matrix:
+ [[64 11]
+ [23 28]]
+Accuracy Score: 0.7302
+Precision Score: 0.7179
+Recall Score: 0.549
+F1 Score: 0.6222
+ROC AUC score: 0.7012
+Optimised Parameters:
+ {'n_estimators': 100, 'criterion': 'gini', 'max_depth': None, 'min_samples_split': 5, 'min_samples_leaf': 5, 'min_weight_fraction_leaf': 0.0, 'max_features': 1, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'bootstrap': True, 'oob_score': False, 'n_jobs': 11, 'random_state': None, 'warm_start': False, 'class_weight': 'balanced', 'ccp_alpha': 0.0, 'max_samples': None}
+Total time taken:  00:02:57
+'''
+
+from mealpy.swarm_based.GJO import OriginalGJO
+
+from mealpy.swarm_based.GTO import OriginalGTO
+
+from mealpy.swarm_based.GTO import Matlab102GTO
+
+from mealpy.swarm_based.GWO import GWO_WOA
+
+from mealpy.swarm_based.GWO import OriginalGWO
+
+from mealpy.swarm_based.GWO import RW_GWO
+
+from mealpy.swarm_based.HBA import OriginalHBA
+
+from mealpy.swarm_based.HHO import OriginalHHO
+
+from mealpy.swarm_based.JA import BaseJA
+
+from mealpy.swarm_based.JA import LevyJA
+
+from mealpy.swarm_based.JA import OriginalJA
+
+from mealpy.swarm_based.MFO import BaseMFO
+
+from mealpy.swarm_based.MFO import OriginalMFO
+
+from mealpy.swarm_based.MGO import OriginalMGO
+
+from mealpy.swarm_based.MPA import OriginalMPA
+
+from mealpy.swarm_based.NGO import OriginalNGO
+
+from mealpy.swarm_based.OOA import OriginalOOA
+
+from mealpy.swarm_based.PFA import OriginalPFA
+
+from mealpy.swarm_based.POA import OriginalPOA
+
+from mealpy.swarm_based.PSO import PPSO
+
+from mealpy.swarm_based.PSO import PPSO
+
+from mealpy.swarm_based.SLO import ModifiedSLO
+
+from mealpy.swarm_based.SLO import OriginalSLO
+
+from mealpy.swarm_based.SRSR import OriginalSRSR
+
+from mealpy.swarm_based.SSO import OriginalSSO
+
+from mealpy.swarm_based.STO import OriginalSTO
+
+from mealpy.swarm_based.STO import OriginalSTO
+
+from mealpy.swarm_based.ServalOA import OriginalServalOA
+
+from mealpy.swarm_based.ServalOA import OriginalServalOA
+
+from mealpy.swarm_based.ServalOA import OriginalServalOA
+
+from mealpy.swarm_based.WOA import OriginalWOA
+
+from mealpy.swarm_based.WaOA import OriginalWaOA
+
+from mealpy.swarm_based.ZOA import OriginalZOA
+
+from mealpy.system_based.AEO import AugmentedAEO
+
+from mealpy.system_based.AEO import EnhancedAEO
+
+from mealpy.system_based.AEO import ImprovedAEO
+
+from mealpy.system_based.AEO import ModifiedAEO
+
+from mealpy.system_based.AEO import OriginalAEO

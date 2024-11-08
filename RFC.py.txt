@@ -1,0 +1,423 @@
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from pandas import read_csv, DataFrame
+from os.path import join
+
+
+seed = 42 
+dataPath = r"D:\Project\Sem7\DataPrepared\data0Prepared.csv"
+
+# Meta-heuristic constants
+eph = 1e3
+earlyStop = 10
+N = 10
+
+def splitData(features, label, valData=False):
+    global xTrain, xTest, yTrain, yTest, xVal, yVal
+    xTrain, xTest, yTrain, yTest = train_test_split(features, label, test_size=0.3, random_state=seed)
+    xTrain, xVal, yTrain, yVal = train_test_split(xTrain, yTrain, test_size=0.3, random_state=seed)
+
+
+def showMetrics(yPred, modelName):
+    yPred = [ele > 0.50 for ele in yPred]
+    print(modelName)
+    acc = round(accuracy_score(yTest, yPred), 4)
+    prsc = round(precision_score(yTest, yPred), 4)
+    rcll = round(recall_score(yTest, yPred), 4)
+    f1 = round(f1_score(yTest, yPred), 4)
+    roc = round(roc_auc_score(yTest, yPred), 4)
+    print('Confusion Matrix:\n', confusion_matrix(yTest, yPred))
+    print('Accuracy Score:', acc)
+    print('Precision Score:', prsc)
+    print('Recall Score:', rcll)
+    print('F1 Score:', f1)
+    print('ROC AUC score:', roc)
+    return (acc, prsc, rcll, f1, roc)
+
+
+# Lower and Upper bound
+#       0,    1,   2,   3,    4,   5,     6,    7,   8,    9,   10, 11,  12,   13,   14,  15,  16
+lb = [  1,    0,   0,   0, 1e-4,   0, -2.99,    0,   0,    0,    0, 11,   0,    0,    0,   0,   0]
+ub = [200,    0,   0,   5,    5, 0.0,     1,    0,   0, 1.99, 0.99, 11,   0, 0.99, 2.99,   0,   0]
+#     100,    0,   0,   2,   1, 0.0,   1.0,    0, 0.0,    1,    0,   0,   0,    0,  2.0, 0.0,   0 
+# Default Values
+
+# Encoders
+criterion = {0: "gini", 1: "entropy", 2: "log_loss"}
+maxFeatures = {0: "sqrt", 1: "log2", 2: None}
+classWeight = {0: "balanced", 1: "balanced_subsample", 2: None}
+
+
+def makeHyperparameters(sol):
+    # print(sol)
+    nEstimators = int(sol[0])
+    criterionEnc = int(sol[1])
+    crit = criterion[criterionEnc]
+    maxDepth = int(sol[2])
+    if maxDepth == 0:
+        maxDepth = None
+    minSamplesSplit = sol[3]
+    if minSamplesSplit >= 2:
+        minSamplesSplit = int(minSamplesSplit)
+    elif 1 < minSamplesSplit < 2:
+        minSamplesSplit = 1.0
+    minSamplesLeaf = sol[4]
+    if minSamplesLeaf >= 1.0:
+        minSamplesLeaf = int(minSamplesLeaf)
+    minWeightFractionLeaf = sol[5]
+    maxFeats = sol[6]
+    if maxFeats < 0:
+        maxFeaturesEnc = (-int(maxFeats))
+        maxFeats = maxFeatures[maxFeaturesEnc]
+    elif maxFeats >= 1.0:
+        maxFeats = int(maxFeats)
+    maxLeafNodes = int(sol[7])
+    if maxLeafNodes == 0:
+        maxLeafNodes = None
+    minImpurityDecrease = sol[8]
+    bootstrap = bool(int(sol[9]))
+    oobScore = bool(int(sol[10]))
+    nJobs = int(sol[11])
+    if nJobs == 0:
+        nJobs = None
+    randomState = int(sol[12])
+    if randomState == 0:
+        randomState = None
+    warmStart = bool(int(sol[13]))
+    classWeightEnc = int(sol[14])
+    clsWgh = classWeight[classWeightEnc]
+    ccpAlpha = sol[15]
+    maxSamples = sol[16]
+    if maxSamples == 0:
+        maxSamples = None
+    elif maxSamples >= 1:
+        maxSamples = int(maxSamples)
+    params = {
+        'n_estimators': nEstimators,
+        'criterion': crit,
+        'max_depth': maxDepth,
+        'min_samples_split': minSamplesSplit,
+        'min_samples_leaf': minSamplesLeaf,
+        'min_weight_fraction_leaf': minWeightFractionLeaf,
+        'max_features': maxFeats,
+        'max_leaf_nodes': maxLeafNodes,
+        'min_impurity_decrease': minImpurityDecrease,
+        'bootstrap': bootstrap,
+        'oob_score': oobScore,
+        'n_jobs': nJobs,
+        'random_state': randomState,
+        'warm_start': warmStart,
+        'class_weight': clsWgh,
+        'ccp_alpha': ccpAlpha,
+        'max_samples': maxSamples
+    }
+    return params
+
+
+def fitness(sol):
+    hyperparameters = makeHyperparameters(sol)
+    try:
+        regg = RandomForestClassifier(**hyperparameters)
+        regg.fit(X=xTrain, y=yTrain)
+    except:
+        return 0
+    else:
+        yP = regg.predict(X=xVal)
+        roc = roc_auc_score(yVal, yP)
+        return roc
+        # r2 = mt.r2_score(yVal, yP)
+        # return r2
+    
+
+def metaheuristicHypertune(optm):
+    '''Hypertuning of parameters of Random Forest Classification'''
+    
+
+    prb = {
+        'fit_func': fitness,
+        'lb': lb,
+        'ub': ub,
+        'minmax': 'max'
+    }
+    trmn = {
+        'max_early_stop': earlyStop
+    }
+
+    try:    
+        sol, bestFit = optm.solve(problem=prb, termination=trmn)
+        # print('Solution:\n', sol)
+        #Best model evaluation
+        bestHyperparameters = makeHyperparameters(sol)
+        bestModel = RandomForestClassifier(**bestHyperparameters)
+        bestModel.fit(X=xTrain, y=yTrain)
+    except Exception as e:
+        bestHyperparameters = e
+        metrics = (0, 0, 0, 0, 0)
+        bestFit = 0
+    else:         
+        yPred = bestModel.predict(X=xTest)
+        metrics = showMetrics(yPred, 'Random Forest Classifier Optimised')
+        print('Best Fit:\n', bestFit)
+
+    return bestHyperparameters, metrics, bestFit
+
+
+
+def bayesOpt(n_estimators, criterion, max_depth, min_samples_split, min_samples_leaf, 
+             min_weight_fraction_leaf, max_features, max_leaf_nodes, min_impurity_decrease,
+             bootstrap, oob_score, n_jobs, random_state, warm_start, class_weight, ccp_alpha, max_samples):
+
+    sol = [n_estimators, criterion, max_depth, min_samples_split, min_samples_leaf, 
+           min_weight_fraction_leaf, max_features, max_leaf_nodes, min_impurity_decrease,
+           bootstrap, oob_score, n_jobs, random_state, warm_start, class_weight, ccp_alpha, max_samples]
+    params = makeHyperparameters(sol)
+
+    model = RandomForestClassifier(**params)
+    try:
+        model.fit(xTrain, yTrain)
+    except:
+        return 0
+    
+    pred = model.predict(xVal)
+    try:
+        return roc_auc_score(yVal, pred)
+    except:
+        return 0
+
+
+def bayesOptimisation(nIter=10):
+    from bayes_opt import BayesianOptimization
+    params = {
+        'n_estimators': (lb[0], ub[0]),
+        'criterion': (lb[1], ub[1]),
+        'max_depth': (lb[2], ub[2]),
+        'min_samples_split': (lb[3], ub[3]),
+        'min_samples_leaf': (lb[4], ub[4]),
+        'min_weight_fraction_leaf': (lb[5], ub[5]),
+        'max_features': (lb[6], ub[6]),
+        'max_leaf_nodes': (lb[7], ub[7]),
+        'min_impurity_decrease': (lb[8], ub[8]),
+        'bootstrap': (lb[9], ub[9]),
+        'oob_score': (lb[10], ub[10]),
+        'n_jobs': (lb[11], ub[11]),
+        'random_state': (lb[12], ub[12]),
+        'warm_start': (lb[13], ub[13]),
+        'class_weight': (lb[14], ub[14]),
+        'ccp_alpha': (lb[15], ub[15]),
+        'max_samples': (lb[16], ub[16]),
+    }
+
+    optimise = BayesianOptimization(bayesOpt, params, random_state=seed)
+    optimise.maximize(n_iter=nIter, init_points=10)
+
+    bestParams = optimise.max['params']
+    n_estimators = bestParams['n_estimators']
+    criterion = bestParams['criterion']
+    max_depth = bestParams['max_depth']
+    min_samples_split = bestParams['min_samples_split']
+    min_samples_leaf =  bestParams['min_samples_leaf']
+    min_weight_fraction_leaf = bestParams['min_weight_fraction_leaf']
+    max_features = bestParams['max_features']
+    max_leaf_nodes = bestParams['max_leaf_nodes']
+    min_impurity_decrease = bestParams['min_impurity_decrease']
+    bootstrap = bestParams['bootstrap']
+    oob_score = bestParams['oob_score']
+    n_jobs = bestParams['n_jobs']
+    random_state = bestParams['random_state']
+    warm_start = bestParams['warm_start']
+    class_weight = bestParams['class_weight']
+    ccp_alpha = bestParams['ccp_alpha']
+    max_samples = bestParams['max_samples']
+    sol = [n_estimators, criterion, max_depth, min_samples_split, min_samples_leaf, 
+           min_weight_fraction_leaf, max_features, max_leaf_nodes, min_impurity_decrease,
+           bootstrap, oob_score, n_jobs, random_state, warm_start, class_weight, ccp_alpha, max_samples]
+    bestParams = makeHyperparameters(sol)
+
+    regg = RandomForestClassifier(**bestParams)
+    try: 
+        regg.fit(xTrain, yTrain)
+        yPred = regg.predict(xTest)
+        metrics = showMetrics(yPred, 'RFC Optimised by Bayes Optimisation')
+    except:
+        metrics = (0, 0, 0, 0, 0)
+    return bestParams, metrics
+
+  
+ 
+def PowerSet(s, n): 
+    '''Function to print the power set'''
+    def findPowerSet(s, res, n): 
+        if (n == 0): 
+            temp = []
+            for i in res: 
+                temp.append(i) 
+            columnsPowerSet.append(temp)
+            return
+    
+        # append the subset to result 
+        res.append(s[n - 1]) 
+        findPowerSet(s, res, n - 1) 
+        res.pop() 
+        findPowerSet(s, res, n - 1) 
+
+    ans = [] 
+    findPowerSet(s, ans, n)
+
+
+
+def columnInclusion(optName='BayesOpt'):
+    '''Hyper tuning by including columns'''
+
+    Column = ['Latitude', 'Longitude', 'TWI', 'TPI', 'Slope', 'Rainfall', 'Hillshade', 'Elevation', 'DrainageDensity', 
+              'ProfileCurvature', 'PlanCurvature', 'Curvature', 'Aspect', 'Soil', 'LULC']
+    
+    dfFileName = f'columnInclusionFeatsSelect{optName}RFC.csv'
+    dfPath = join(r"D:\Project\Sem7\Python\reportFiles", dfFileName)
+    columnsPowerSet = []
+    PowerSet(Column[:], len(Column[:]))
+    columnsPowerSet.pop()
+    for i in reversed(range(0, len(columnsPowerSet))):
+        data = read_csv(dataPath)
+        try:
+            columnsPowerSet[i].remove('Soil')
+            columnsPowerSet[i] += ['Soil3639', 'Soil3662', 'Soil3691', 'Soil3717', 'Soil3761', 'Soil3849', 'Soil3850', 'Soil6998']
+        except:
+            pass
+        try: 
+            columnsPowerSet[i].remove('LULC')
+            columnsPowerSet[i] += ['LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11']
+        except:
+            pass
+        try:
+            df = read_csv(dfPath)
+        except:
+            df = DataFrame(columns=['accuracy', 'precision', 'recall', 'f1_score', 'roc_auc', 'includedColumns', 'params', ])
+        print('Included columns:\n', columnsPowerSet[i])
+        features = data.loc[:, columnsPowerSet[i]]
+        label = data.iloc[:, -1]
+        splitData(features, label)
+
+        if optName.lower()[0] == 'b':
+            params, metrics = bayesOptimisation()
+            df.loc[i, 'includedColumns'] = str(columnsPowerSet[i])
+            df.loc[i, 'params'] = str(params)
+            df.loc[i, 'accuracy'] = metrics[0]
+            df.loc[i, 'precision'] = metrics[1]
+            df.loc[i, 'recall'] = metrics[2]
+            df.loc[i, 'f1_score'] = metrics[3]
+            df.loc[i, 'roc_auc'] = metrics[4]
+        elif optName.lower()[0] == 'm':
+            from metaHeuristicOptimizers import getOptimizersDictionary
+            dictOpt = getOptimizersDictionary(epochs=eph, population=N)
+            for k in range(0, len(dictOpt.keys())):
+                print('\n\nHeuristic k: ', k)
+                key = list(dictOpt.keys())[k]
+                params, metrics, bestFit = metaheuristicHypertune(dictOpt[key])
+                df.loc[i, 'includedColumns'] = str(columnsPowerSet[i])
+                df.loc[i, 'meteHeuristic'] = str(key)
+                df.loc[i, 'params'] = str(params)
+                df.loc[i, 'accuracy'] = metrics[0]
+                df.loc[i, 'precision'] = metrics[1]
+                df.loc[i, 'recall'] = metrics[2]
+                df.loc[i, 'f1_score'] = metrics[3]
+                df.loc[i, 'roc_auc'] = metrics[4]
+                df.loc[i, 'bestFit'] = bestFit
+
+        df.to_csv(dfPath, index=False)
+
+
+def columnExclusion(optName='BayesOpt'):
+    '''Hyper tuning by removing columns'''
+
+    Column = ['Latitude', 'Longitude', 'TWI', 'TPI', 'Slope', 'Rainfall', 'Hillshade', 'Elevation', 'DrainageDensity', 
+              'ProfileCurvature', 'PlanCurvature', 'Curvature', 'Aspect', 'Soil', 'LULC']
+    
+    Column.remove('PlanCurvature')
+    dfFileName = f'columnExclusionFeatsSelect{optName}RFC.csv'
+    dfPath = join(r"D:\Project\Sem7\Python\reportFiles", dfFileName)
+    itStart = 14
+    kStart = 0
+    for it in range(itStart, len(Column)):
+        item = Column[it]
+        data = read_csv(dataPath)
+        clm = [item, ] + ['PlanCurvature']
+        try:
+            df = read_csv(dfPath)
+            i = len(df)
+        except:
+            df = DataFrame(columns=['accuracy', 'precision', 'recall', 'f1_score', 'roc_auc', 'excludedColumns', 'params', ])
+            i = 0
+        if item == 'LULC':
+            clm = ['PlanCurvature'] + ['LULC1', 'LULC2', 'LULC5', 'LULC7', 'LULC8', 'LULC9', 'LULC10', 'LULC11']
+        if item == 'Soil':
+            clm = ['PlanCurvature'] + ['Soil3639', 'Soil3662', 'Soil3691', 'Soil3717', 'Soil3761', 'Soil3849', 'Soil3850', 'Soil6998']
+        data = data.drop(clm, axis=1)
+        features = data.iloc[:, :-1]
+        label = data.iloc[:, -1]
+        splitData(features, label)
+
+        if optName.lower()[0] == 'b':
+            print('\nExcluded columns, it: \n', clm, it)
+            params, metrics = bayesOptimisation()
+            df.loc[i, 'excludedColumns'] = str(clm)
+            df.loc[i, 'params'] = str(params)
+            df.loc[i, 'accuracy'] = metrics[0]
+            df.loc[i, 'precision'] = metrics[1]
+            df.loc[i, 'recall'] = metrics[2]
+            df.loc[i, 'f1_score'] = metrics[3]
+            df.loc[i, 'roc_auc'] = metrics[4]
+            df.to_csv(dfPath, index=False)
+            i += 1
+        elif optName.lower()[0] == 'm':
+            from metaHeuristicOptimizers import getOptimizersDictionary
+            dictOpt = getOptimizersDictionary(epochs=eph, population=N)
+            for k in range(kStart, len(dictOpt.keys())):
+                print('\n\nHeuristic k: ', k)
+                print('Excluded columns, it: \n', clm, it)
+                key = list(dictOpt.keys())[k]
+                params, metrics, bestFit = metaheuristicHypertune(dictOpt[key])
+                df.loc[i, 'excludedColumns'] = str(clm)
+                df.loc[i, 'meteHeuristic'] = str(key)
+                df.loc[i, 'params'] = str(params)
+                df.loc[i, 'accuracy'] = metrics[0]
+                df.loc[i, 'precision'] = metrics[1]
+                df.loc[i, 'recall'] = metrics[2]
+                df.loc[i, 'f1_score'] = metrics[3]
+                df.loc[i, 'roc_auc'] = metrics[4]
+                df.loc[i, 'bestFit'] = bestFit
+                df.to_csv(dfPath, index=False)
+                i += 1
+    
+     
+
+def normalRFR(optType='bayes'):
+    '''Normal check of Random Forest Classification'''
+
+    data = read_csv(dataPath)
+    features = data.iloc[:, :-1]
+    label = data.iloc[:, -1]
+    splitData(features, label)
+
+    if optType == 'bayes':
+        params, metrics = bayesOptimisation(nIter=40)
+    elif optType == 'metaheuristic':
+        params, metrics = metaheuristicHypertune()
+
+    print('Optimised Parameters: \n', params)
+
+
+
+if __name__ == '__main__':
+    import time
+    t0 = time.time()
+    global columnsPowerSet 
+
+    
+    # normalRFR('metaheuristic')
+    columnExclusion('MetaHeuristic')
+
+
+    t1 = time.time()
+    t = time.strftime('%H:%M:%S', time.gmtime(t1-t0))
+    print('Total time taken: ', t)

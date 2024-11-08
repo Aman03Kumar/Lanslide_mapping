@@ -1,0 +1,79 @@
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+def showMetrics(yPred):
+    from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+    from sklearn.metrics import roc_curve, auc
+    for i in range(len(yPred)):
+        if yPred[i]>0.29:       # 0.27 & 0.29
+            yPred[i] = 1 
+        else:
+            yPred[i] = 0 
+    # print('Confusion Matrix:\n', confusion_matrix(yTest, yPred))
+    # print('Accuracy Score:', accuracy_score(yTest, yPred))
+    # print('Precision Score:', precision_score(yTest, yPred))
+    # print('Recall Score:', recall_score(yTest, yPred))
+    # print('F1 Score:', f1_score(yTest, yPred))
+    # FPR, TPR, thres = roc_curve(yTest, yPred)
+    # print('ROC AUC score:', auc(FPR, TPR))
+    print('Confusion Matrix:\n', confusion_matrix(label, yPred))
+    print('Accuracy Score:', accuracy_score(label, yPred))
+    print('Precision Score:', precision_score(label, yPred))
+    print('Recall Score:', recall_score(label, yPred))
+    print('F1 Score:', f1_score(label, yPred))
+    FPR, TPR, thres = roc_curve(label, yPred)
+    print('ROC AUC score:', auc(FPR, TPR))
+
+dataset = pd.read_csv(r"D:\Sem__Project\Sem8\DataPrepared\data0Prepared.csv")
+data = dataset.copy()
+label = data.iloc[:, -1]
+feats = data.iloc[:, :-1]
+xTrain, xTest, yTrain, yTest = train_test_split(feats, label, test_size=0.30, random_state=42, stratify=label)
+
+lr = LogisticRegression(random_state=0)
+lr.fit(xTrain, yTrain)
+yPredLRG = lr.predict(feats)
+yProbaLRG = lr.predict_proba(feats)[:, 1]
+
+svmLin = SVC(kernel='linear', random_state=0, probability=True)
+svmLin.fit(xTrain, yTrain)
+yPredSVC = svmLin.predict(feats)
+yProbaSVC = svmLin.predict_proba(feats)[:, 1]
+
+from sklearn.tree import DecisionTreeClassifier
+dtc = DecisionTreeClassifier(criterion='entropy', random_state=0)
+dtc.fit(xTrain, yTrain)
+yPredDTC = dtc.predict(feats)
+yProbaDTC = dtc.predict_proba(feats)[:, 1]
+
+predictionD = {
+    'LRG': [yPredLRG, yProbaLRG],
+    'DTC': [yPredDTC, yProbaDTC],
+    'SVC': [yPredSVC, yProbaSVC],
+}
+
+sumPred = yPredLRG+yPredDTC+yPredSVC
+sumProba = (yProbaLRG+yProbaDTC+yProbaSVC)/3
+# print(sumPred, sumProba)
+votes = []
+for i in range(len(sumPred)):
+    if sumPred[i]<=1:
+        votes.append(0)
+    else:
+        votes.append(1)
+
+showMetrics(sumProba)
+
+# orgData = pd.read_excel(r"D:\Sem__Project\Sem8\RawData\data0.xlsx").loc[:, ['Target', 'latitude', 'longitude']]
+# orgData['prediction'] = votes
+# orgData['probability'] = sumProba
+# print(orgData)
+# outPath = r"D:\Sem__Project\Sem8\DataSpatial\EnsembleSpatialData.csv"
+# orgData.to_csv(outPath, index=False)
+
+
+
+
